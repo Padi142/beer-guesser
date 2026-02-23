@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const brandList = body.allowedBrands.join(", ");
 
     const { text } = await generateText({
-      model: pinference(""),
+      model: pinference("Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m"),
       maxOutputTokens: 1024,
       system:
         "You are a Czech beer brand classifier. For each example, shortly reason first, then provide the final brand inside <guess>...</guess> tags.",
