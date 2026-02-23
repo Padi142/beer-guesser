@@ -304,12 +304,12 @@ export function BeerTester() {
                 )}
               </div>
 
-              {(description || isGeneratingDescription) && (
+              {!isGeneratingDescription && (
                 <div className="relative mt-3">
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Generating description..."
+                    placeholder="Enter a description of the beer bottle..."
                     className="border-border/40 bg-card/40 min-h-[150px] resize-y"
                     disabled={isGeneratingDescription}
                   />
@@ -419,7 +419,7 @@ export function BeerTester() {
                       <p className="text-muted-foreground mb-1 text-xs tracking-wider uppercase">
                         Model Output
                       </p>
-                      <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
                         {result.reasoning}
                       </p>
                     </div>
