@@ -14,7 +14,6 @@ import Link from "next/link";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { Textarea } from "~/components/ui/textarea";
 import { Separator } from "~/components/ui/separator";
@@ -56,6 +55,19 @@ const BEER_BRANDS = [
   "gambrinus",
 ];
 
+const DESCRIPTION_MODELS = [
+  { id: "gpt-5.1", label: "GPT 5.1" },
+  { id: "gemini-flash", label: "Gemini Flash" },
+  { id: "gemini-pro", label: "Gemini Pro" },
+] as const;
+
+const GUESS_MODELS = [
+  {
+    id: "Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m",
+    label: "Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m",
+  },
+] as const;
+
 // ─── Main component ─────────────────────────────────────────
 
 export function BeerTester() {
@@ -63,6 +75,12 @@ export function BeerTester() {
   const [imagesLoading, setImagesLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<BeerImage | null>(null);
   const [description, setDescription] = useState("");
+  const [descriptionModel, setDescriptionModel] = useState<
+    (typeof DESCRIPTION_MODELS)[number]["id"]
+  >("gemini-flash");
+  const [guessModel, setGuessModel] = useState<
+    (typeof GUESS_MODELS)[number]["id"]
+  >("Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m");
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [selectedBrands, setSelectedBrands] = useState<Set<string>>(
     new Set(BEER_BRANDS),
@@ -94,7 +112,10 @@ export function BeerTester() {
       const res = await fetch("/api/describe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: selectedImage.src }),
+        body: JSON.stringify({
+          imageUrl: selectedImage.src,
+          model: descriptionModel,
+        }),
       });
       const data = (await res.json()) as {
         description?: string;
@@ -122,6 +143,7 @@ export function BeerTester() {
         body: JSON.stringify({
           description,
           allowedBrands: [...selectedBrands],
+          model: guessModel,
         }),
       });
       const data = (await res.json()) as GuessResult & { error?: string };
@@ -181,12 +203,6 @@ export function BeerTester() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
-            <Badge variant="secondary" className="text-xs">
-              OCR: Gemini Flash
-            </Badge>
-            <Badge variant="secondary" className="text-xs">
-              Beer Guessing: Custom RL
-            </Badge>
             <Link
               href="https://app.primeintellect.ai/dashboard/environments/padisoft-sro/czech-beer-brand-name"
               target="_blank"
@@ -293,6 +309,20 @@ export function BeerTester() {
                 </div>
               </Card>
 
+              <div className="mt-4">
+                <ModelSelect
+                  id="description-model"
+                  label="Description Model"
+                  value={descriptionModel}
+                  onChange={(value) =>
+                    setDescriptionModel(
+                      value as (typeof DESCRIPTION_MODELS)[number]["id"],
+                    )
+                  }
+                  options={DESCRIPTION_MODELS}
+                />
+              </div>
+
               <div className="mt-4 flex items-center gap-3">
                 <Button
                   onClick={handleGenerateDescription}
@@ -394,6 +424,17 @@ export function BeerTester() {
               style={{ animationDelay: "0.35s" }}
             >
               <StepLabel step="04" label="Get Prediction" />
+              <div className="mb-3">
+                <ModelSelect
+                  id="guess-model"
+                  label="Beer Guess Model"
+                  value={guessModel}
+                  onChange={(value) =>
+                    setGuessModel(value as (typeof GUESS_MODELS)[number]["id"])
+                  }
+                  options={GUESS_MODELS}
+                />
+              </div>
               <Button
                 size="lg"
                 onClick={handleGuess}
@@ -457,5 +498,39 @@ function StepLabel({ step, label }: { step: string; label: string }) {
       <span className="font-display text-primary text-base">{step}</span>
       <h2 className="font-display text-lg">{label}</h2>
     </div>
+  );
+}
+
+function ModelSelect({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly { id: string; label: string }[];
+}) {
+  return (
+    <label htmlFor={id} className="space-y-1">
+      <span className="text-muted-foreground text-xs tracking-wide uppercase">
+        {label}
+      </span>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="focus-visible:border-ring focus-visible:ring-ring/50 border-input bg-card/60 h-10 w-full rounded-md border px-3 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px]"
+      >
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

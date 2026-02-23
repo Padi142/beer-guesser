@@ -12,11 +12,19 @@ const pinference = createOpenAICompatible({
   },
 });
 
+const GUESS_MODELS = {
+  "Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m":
+    "Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m",
+} as const;
+
+type GuessModelId = keyof typeof GUESS_MODELS;
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
       description?: string;
       allowedBrands?: string[];
+      model?: GuessModelId;
     };
 
     if (!body.description) {
@@ -33,10 +41,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const modelId =
+      body.model ??
+      "Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m";
+    if (!(modelId in GUESS_MODELS)) {
+      return NextResponse.json(
+        { error: "unsupported guess model" },
+        { status: 400 },
+      );
+    }
+
     const brandList = body.allowedBrands.join(", ");
 
     const { text } = await generateText({
-      model: pinference("Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m"),
+      model: pinference(GUESS_MODELS[modelId]),
       maxOutputTokens: 10000,
       system:
         "You are a Czech beer brand classifier. For each example, shortly reason first, then provide the final brand inside <guess>...</guess> tags.",

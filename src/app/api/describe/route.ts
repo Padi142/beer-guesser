@@ -5,9 +5,21 @@ import { env } from "~/env";
 
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_KEY });
 
+const DESCRIPTION_MODELS = {
+  "gpt-5.1": "openai/gpt-5.1",
+  "gemini-flash": "google/gemini-2.5-flash",
+  "gemini-pro": "google/gemini-2.5-pro",
+} as const;
+
+type DescriptionModelId = keyof typeof DESCRIPTION_MODELS;
+
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { imageUrl?: string };
+    const body = (await request.json()) as {
+      imageUrl?: string;
+      model?: DescriptionModelId;
+    };
+
     if (!body.imageUrl) {
       return NextResponse.json(
         { error: "imageUrl is required" },
@@ -15,8 +27,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const modelId = body.model ?? "gemini-flash";
+    if (!(modelId in DESCRIPTION_MODELS)) {
+      return NextResponse.json(
+        { error: "unsupported description model" },
+        { status: 400 },
+      );
+    }
+
     const { text } = await generateText({
-      model: openrouter("google/gemini-3-flash-preview"),
+      model: openrouter(DESCRIPTION_MODELS[modelId]),
       messages: [
         {
           role: "user",
