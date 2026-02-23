@@ -8,7 +8,6 @@ import {
   ImageIcon,
   RotateCcw,
   FlaskConical,
-  Upload,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -180,6 +179,22 @@ export function BeerTester() {
               </h1>
               <p className="text-muted-foreground text-xs tracking-[0.2em] uppercase"></p>
             </div>
+          </div>
+          <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+            <Badge variant="secondary" className="text-xs">
+              OCR: Gemini Flash
+            </Badge>
+            <Badge variant="secondary" className="text-xs">
+              Beer Guessing: Custom RL
+            </Badge>
+            <Link
+              href="https://app.primeintellect.ai/dashboard/environments/padisoft-sro/czech-beer-brand-name"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary text-xs hover:underline"
+            >
+              Training Environment
+            </Link>
           </div>
         </div>
         <div className="via-primary/20 h-px bg-linear-to-r from-transparent to-transparent" />
