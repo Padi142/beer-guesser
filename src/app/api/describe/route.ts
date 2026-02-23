@@ -20,6 +20,11 @@ export async function POST(request: Request) {
       model?: DescriptionModelId;
     };
 
+    console.info("[api/describe] request received", {
+      hasImageUrl: Boolean(body.imageUrl),
+      model: body.model ?? "gemini-flash",
+    });
+
     if (!body.imageUrl) {
       return NextResponse.json(
         { error: "imageUrl is required" },
@@ -63,9 +68,14 @@ export async function POST(request: Request) {
       maxOutputTokens: 8192,
     });
 
+    console.info("[api/describe] request completed", {
+      model: modelId,
+      descriptionLength: text.length,
+    });
+
     return NextResponse.json({ description: text });
   } catch (error) {
-    console.error("Failed to generate description:", error);
+    console.error("[api/describe] request failed", error);
     return NextResponse.json(
       { error: "Failed to generate description" },
       { status: 500 },

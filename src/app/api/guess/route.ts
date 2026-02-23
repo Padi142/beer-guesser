@@ -27,6 +27,15 @@ export async function POST(request: Request) {
       model?: GuessModelId;
     };
 
+    console.info("[api/guess] request received", {
+      hasDescription: Boolean(body.description),
+      descriptionLength: body.description?.length ?? 0,
+      allowedBrandsCount: body.allowedBrands?.length ?? 0,
+      model:
+        body.model ??
+        "Qwen/Qwen3-30B-A3B-Instruct-2507:ovtsznhz12dzk34njrvose0m",
+    });
+
     if (!body.description) {
       return NextResponse.json(
         { error: "description is required" },
@@ -71,9 +80,15 @@ Candidate brands (choose one exact name): ${brandList}`,
     const guessMatch = /<guess>(.*?)<\/guess>/is.exec(text);
     const brand = guessMatch?.[1]?.trim() ?? "Unknown";
 
+    console.info("[api/guess] request completed", {
+      model: modelId,
+      brand,
+      reasoningLength: text.length,
+    });
+
     return NextResponse.json({ brand, reasoning: text });
   } catch (error) {
-    console.error("Failed to guess beer:", error);
+    console.error("[api/guess] request failed", error);
     return NextResponse.json(
       { error: "Failed to guess beer" },
       { status: 500 },
