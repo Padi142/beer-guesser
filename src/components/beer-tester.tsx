@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ScanEye,
   Sparkles,
   Loader2,
   ImageIcon,
   RotateCcw,
-  Beer,
   FlaskConical,
+  Upload,
 } from "lucide-react";
+import Link from "next/link";
 
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
@@ -25,6 +26,7 @@ export interface BeerImage {
   id: string;
   src: string;
   alt: string;
+  filename?: string;
 }
 
 export interface GuessResult {
@@ -32,14 +34,6 @@ export interface GuessResult {
   confidence: number;
   reasoning: string;
 }
-
-// ─── Mock data — replace with real data loading ─────────────
-
-const MOCK_IMAGES: BeerImage[] = Array.from({ length: 12 }, (_, i) => ({
-  id: `beer-${i + 1}`,
-  src: `/beers/beer-${i + 1}.jpg`,
-  alt: `Beer sample ${i + 1}`,
-}));
 
 const BEER_BRANDS = [
   "Pilsner Urquell",
@@ -60,48 +54,11 @@ const BEER_BRANDS = [
   "Stella Artois",
 ];
 
-// ─── Placeholder gradient for gallery thumbnails ────────────
-
-function PlaceholderImage({
-  index,
-  size = "sm",
-}: {
-  index: number;
-  size?: "sm" | "lg";
-}) {
-  const hue = 28 + index * 7;
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center",
-        size === "sm" ? "aspect-3/4" : "h-full min-h-[280px]",
-      )}
-      style={{
-        background: `linear-gradient(155deg, hsl(${hue}, 35%, 20%), hsl(${hue - 5}, 50%, 7%))`,
-      }}
-    >
-      <Beer
-        className={cn(
-          "text-foreground/15",
-          size === "sm" ? "size-6" : "size-16",
-        )}
-        strokeWidth={1.2}
-      />
-      <span
-        className={cn(
-          "font-display text-foreground/20 mt-1",
-          size === "sm" ? "text-xs" : "text-sm",
-        )}
-      >
-        #{index + 1}
-      </span>
-    </div>
-  );
-}
-
 // ─── Main component ─────────────────────────────────────────
 
 export function BeerTester() {
+  const [images, setImages] = useState<BeerImage[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<BeerImage | null>(null);
   const [description, setDescription] = useState("");
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
@@ -110,6 +67,23 @@ export function BeerTester() {
   );
   const [isGuessing, setIsGuessing] = useState(false);
   const [result, setResult] = useState<GuessResult | null>(null);
+
+  const fetchImages = useCallback(async () => {
+    setImagesLoading(true);
+    try {
+      const res = await fetch("/api/images");
+      const data = (await res.json()) as { images?: BeerImage[] };
+      setImages(data.images ?? []);
+    } catch {
+      console.error("Failed to fetch images");
+    } finally {
+      setImagesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchImages();
+  }, [fetchImages]);
 
   // TODO: Replace with your OCR LLM call
   const handleGenerateDescription = async () => {
@@ -193,34 +167,55 @@ export function BeerTester() {
             <StepLabel step="01" label="Select a Beer" />
             <div className="border-border/40 bg-card/40 rounded-xl border p-3 backdrop-blur-sm">
               <ScrollArea className="h-[calc(100vh-240px)] pr-3">
-                <div className="grid grid-cols-3 gap-2">
-                  {MOCK_IMAGES.map((image, i) => {
-                    const isSelected = selectedImage?.id === image.id;
-                    return (
-                      <button
-                        key={image.id}
-                        onClick={() => handleSelectImage(image)}
-                        className={cn(
-                          "group relative overflow-hidden rounded-lg border-2 transition-all duration-300",
-                          isSelected
-                            ? "animate-glow-pulse border-primary"
-                            : "hover:border-primary/40 border-transparent",
-                        )}
-                      >
-                        {/* TODO: Replace PlaceholderImage with <img src={image.src} /> */}
-                        <PlaceholderImage index={i} size="sm" />
-                        <div
+                {imagesLoading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="text-primary size-6 animate-spin" />
+                  </div>
+                ) : images.length === 0 ? (
+                  <div className="text-muted-foreground flex flex-col items-center justify-center py-20 text-center">
+                    <ImageIcon className="size-10 opacity-20" />
+                    <p className="mt-3 text-sm">No images yet</p>
+                    <Link
+                      href="/upload"
+                      className="text-primary mt-1 text-xs hover:underline"
+                    >
+                      Upload some
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {images.map((image) => {
+                      const isSelected = selectedImage?.id === image.id;
+                      return (
+                        <button
+                          key={image.id}
+                          onClick={() => handleSelectImage(image)}
                           className={cn(
-                            "absolute inset-0 transition-opacity duration-300",
+                            "group relative overflow-hidden rounded-lg border-2 transition-all duration-300",
                             isSelected
-                              ? "bg-primary/5"
-                              : "group-hover:bg-primary/5 bg-transparent",
+                              ? "animate-glow-pulse border-primary"
+                              : "hover:border-primary/40 border-transparent",
                           )}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={image.src}
+                            alt={image.alt}
+                            className="aspect-3/4 w-full object-cover"
+                          />
+                          <div
+                            className={cn(
+                              "absolute inset-0 transition-opacity duration-300",
+                              isSelected
+                                ? "bg-primary/5"
+                                : "group-hover:bg-primary/5 bg-transparent",
+                            )}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </ScrollArea>
             </div>
           </section>
@@ -237,11 +232,11 @@ export function BeerTester() {
               <Card className="border-border/40 bg-card/40 overflow-hidden py-0 backdrop-blur-sm">
                 <div className="bg-muted/30 relative flex items-center justify-center overflow-hidden">
                   {selectedImage ? (
-                    <PlaceholderImage
-                      index={
-                        parseInt(selectedImage.id.split("-")[1] ?? "1") - 1
-                      }
-                      size="lg"
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selectedImage.src}
+                      alt={selectedImage.alt}
+                      className="max-h-[400px] w-full object-contain"
                     />
                   ) : (
                     <div className="flex min-h-[280px] flex-col items-center justify-center py-16 text-center">
