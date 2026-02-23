@@ -4,7 +4,7 @@ import { type Metadata } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 
 export const metadata: Metadata = {
-  title: "Beer Guesser — LLM Tasting Lab",
+  title: "Beer Guesser ",
   description:
     "Test a fine-tuned LLM's ability to identify beer brands from bottle descriptions",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
