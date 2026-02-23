@@ -13,6 +13,8 @@ export const env = createEnv({
     AWS_ACCESS_KEY_ID: z.string().min(1),
     AWS_SECRET_ACCESS_KEY: z.string().min(1),
     UPLOAD_PASSWORD: z.string().min(1),
+    OPENROUTER_KEY: z.string().min(1),
+    PINFERENCE_API_KEY: z.string().min(1),
   },
 
   client: {},
@@ -26,6 +28,8 @@ export const env = createEnv({
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     UPLOAD_PASSWORD: process.env.UPLOAD_PASSWORD,
+    OPENROUTER_KEY: process.env.OPENROUTER_KEY,
+    PINFERENCE_API_KEY: process.env.PINFERENCE_API_KEY,
   },
 
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

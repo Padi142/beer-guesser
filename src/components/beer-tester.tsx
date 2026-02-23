@@ -31,27 +31,30 @@ export interface BeerImage {
 
 export interface GuessResult {
   brand: string;
-  confidence: number;
   reasoning: string;
 }
 
 const BEER_BRANDS = [
-  "Pilsner Urquell",
-  "Budweiser Budvar",
-  "Staropramen",
+  "branik",
+  "plzen",
+  "starobrno",
+  "jezek",
+  "bernard",
+  "radegast",
+  "zubr",
+  "svijany",
+  "proud",
+  "birell",
+  "budweiser",
+  "zlaty bazant",
+  "poutnik",
   "Kozel",
-  "Gambrinus",
-  "Bernard",
-  "Krušovice",
-  "Radegast",
-  "Svijany",
-  "Zlatopramen",
-  "Březňák",
-  "Lobkowicz",
-  "Heineken",
-  "Corona",
-  "Guinness",
-  "Stella Artois",
+  "krusovice",
+  "primator tchyne",
+  "pardal",
+  "primator",
+  "nachmelena opice",
+  "gambrinus",
 ];
 
 // ─── Main component ─────────────────────────────────────────
@@ -85,31 +88,57 @@ export function BeerTester() {
     void fetchImages();
   }, [fetchImages]);
 
-  // TODO: Replace with your OCR LLM call
   const handleGenerateDescription = async () => {
     if (!selectedImage) return;
     setIsGeneratingDescription(true);
-    // Placeholder — swap with: const desc = await ocrDescribe(selectedImage.src);
-    await new Promise((r) => setTimeout(r, 2000));
-    setDescription(
-      "Tall green glass bottle, 500ml. Gold foil cap. Central label with ornate crest featuring two lions rampant. Text reads 'PREMIUM' across a ribbon banner. Established date visible: 1842. Barley and hop motifs border the label edges.",
-    );
-    setIsGeneratingDescription(false);
+    try {
+      const res = await fetch("/api/describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: selectedImage.src }),
+      });
+      const data = (await res.json()) as {
+        description?: string;
+        error?: string;
+      };
+      if (data.description) {
+        setDescription(data.description);
+      } else {
+        setDescription(`Error: ${data.error ?? "Unknown error"}`);
+      }
+    } catch {
+      setDescription("Error: Failed to generate description");
+    } finally {
+      setIsGeneratingDescription(false);
+    }
   };
 
-  // TODO: Replace with your fine-tuned LLM call
   const handleGuess = async () => {
     if (!description || selectedBrands.size === 0) return;
     setIsGuessing(true);
-    // Placeholder — swap with: const res = await guessFromDescription(description, [...selectedBrands]);
-    await new Promise((r) => setTimeout(r, 2000));
-    setResult({
-      brand: "Pilsner Urquell",
-      confidence: 0.87,
-      reasoning:
-        "The description mentions a green bottle with an ornate crest featuring two lions, a 'PREMIUM' banner, and the establishment year 1842 — all consistent with the iconic Pilsner Urquell label design.",
-    });
-    setIsGuessing(false);
+    try {
+      const res = await fetch("/api/guess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description,
+          allowedBrands: [...selectedBrands],
+        }),
+      });
+      const data = (await res.json()) as GuessResult & { error?: string };
+      if (data.error) {
+        setResult({ brand: "Error", reasoning: data.error });
+      } else {
+        setResult({ brand: data.brand, reasoning: data.reasoning });
+      }
+    } catch {
+      setResult({
+        brand: "Error",
+        reasoning: "Failed to contact the model",
+      });
+    } finally {
+      setIsGuessing(false);
+    }
   };
 
   const toggleBrand = (brand: string) => {
@@ -281,7 +310,7 @@ export function BeerTester() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Generating description..."
-                    className="border-border/40 bg-card/40 min-h-[100px] resize-y"
+                    className="border-border/40 bg-card/40 min-h-[150px] resize-y"
                     disabled={isGeneratingDescription}
                   />
                   {isGeneratingDescription && (
@@ -387,29 +416,10 @@ export function BeerTester() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground mb-2 text-xs tracking-wider uppercase">
-                        Confidence
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-                          <div
-                            className="from-primary/70 to-primary h-full rounded-full bg-linear-to-r transition-all duration-1000 ease-out"
-                            style={{ width: `${result.confidence * 100}%` }}
-                          />
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="font-mono text-xs"
-                        >
-                          {Math.round(result.confidence * 100)}%
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
                       <p className="text-muted-foreground mb-1 text-xs tracking-wider uppercase">
-                        Reasoning
+                        Model Output
                       </p>
-                      <p className="text-foreground/80 leading-relaxed">
+                      <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">
                         {result.reasoning}
                       </p>
                     </div>
